@@ -1,0 +1,83 @@
+---
+import { getCollection } from 'astro:content';
+import PlumcoLayout from '../../layouts/PlumcoLayout.astro';
+import PlumcoSidebar from '../../components/layout/PlumcoSidebar.astro';
+import { readData } from '../../lib/readData';
+
+const sobreData = readData('sobre.json');
+
+export async function getStaticPaths() {
+	const posts = await getCollection('blog');
+	return posts.map((post) => ({
+		params: { slug: post.slug },
+		props: post,
+	}));
+}
+const post = Astro.props;
+const { Content } = await post.render();
+---
+
+<PlumcoLayout title={post.data.title}>
+    <!-- start wpo-page-title -->
+    <section class="wpo-page-title" style={`background-image: url(${sobreData.hero.bgImage}); background-position: center center; background-size: cover;`}>
+        <div class="container">
+            <div class="row">
+                <div class="col col-xs-12">
+                    <div class="wpo-breadcumb-wrap">
+                        <h2>{post.data.title}</h2>
+                        <ol class="wpo-breadcumb-wrap">
+                            <li><a href="/">Home</a></li>
+                            <li><a href="/blog">Blog</a></li>
+                            <li>Post</li>
+                        </ol>
+                    </div>
+                </div>
+            </div> <!-- end row -->
+        </div> <!-- end container -->
+    </section>
+    <!-- end page-title -->
+
+    <!-- start wpo-blog-single-section -->
+    <section class="wpo-blog-single-section section-padding">
+        <div class="container">
+            <div class="row">
+                <div class="col col-lg-8 col-12">
+                    <div class="wpo-blog-content">
+                        <div class="post format-standard-image">
+                            {post.data.heroImage && (
+                                <div class="entry-media">
+                                    <img src={post.data.heroImage} alt={post.data.title}>
+                                </div>
+                            )}
+                            <div class="entry-meta">
+                                <ul>
+                                    <li><i class="fi flaticon-user"></i> By {post.data.author || "Admin"}</li>
+                                    <li><i class="fi flaticon-calendar"></i> {post.data.pubDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</li>
+                                </ul>
+                            </div>
+                            <h2>{post.data.title}</h2>
+                            <div class="entry-details">
+                                <Content />
+                            </div>
+                        </div>
+
+                        <div class="tag-share clearfix">
+                            <div class="tag">
+                                <span>Tags: </span>
+                                <ul>
+                                    <li><a href="#">Plumbing</a></li>
+                                    <li><a href="#">Kitchen</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+
+                    </div>
+                </div>
+                <div class="col col-lg-4 col-12">
+                    <PlumcoSidebar postAuthor={post.data.author} />
+                </div>
+            </div>
+        </div> <!-- end container -->
+    </section>
+</PlumcoLayout>
