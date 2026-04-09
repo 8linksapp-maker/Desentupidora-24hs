@@ -10,9 +10,6 @@ export default function ConfigEditor() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [pendingLogo, setPendingLogo] = useState<File | null>(null);
-    const [pendingFavicon, setPendingFavicon] = useState<File | null>(null);
-    const [pendingAuthorImage, setPendingAuthorImage] = useState<File | null>(null);
-    const [authors, setAuthors] = useState<any[]>([]);
 
     const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -26,10 +23,6 @@ export default function ConfigEditor() {
             .then(data => { setConfig(JSON.parse(data.content)); setFileSha(data.sha); })
             .catch(err => setError(err.message))
             .finally(() => setLoading(false));
-
-        githubApi('read', 'src/data/authors.json')
-            .then(data => setAuthors(JSON.parse(data.content)))
-            .catch(err => console.error('Erro ao ler autores:', err));
     }, []);
 
     const handleSave = async (e: React.FormEvent) => {
@@ -46,31 +39,8 @@ export default function ConfigEditor() {
                 await githubApi('write', ghPath, { content: base64Content, isBase64: true, message: 'CMS: Upload Logo' });
                 configCopy.logo = ghPath.replace('public', '');
             }
-            if (pendingFavicon) {
-                triggerToast('Enviando novo favicon...', 'progress', 40);
-                const base64Content = await fileToBase64(pendingFavicon);
-                const fileExt = pendingFavicon.name.split('.').pop() || 'png';
-                const ghPath = `public/uploads/${Date.now()}-favicon.${fileExt}`;
-                await githubApi('write', ghPath, { content: base64Content, isBase64: true, message: 'CMS: Upload Favicon' });
-                configCopy.favicon = ghPath.replace('public', '');
-            }
-            if (pendingAuthorImage) {
-                triggerToast('Enviando foto do perfil...', 'progress', 50);
-                const base64Content = await fileToBase64(pendingAuthorImage);
-                const fileExt = pendingAuthorImage.name.split('.').pop() || 'jpg';
-                const ghPath = `public/uploads/${Date.now()}-author.${fileExt}`;
-                await githubApi('write', ghPath, { content: base64Content, isBase64: true, message: 'CMS: Upload Author Image' });
-                configCopy.authorImage = ghPath.replace('public', '');
-            }
-
-            // Sincronizar campos de contato da raiz com o objeto contact
-            if (configCopy.contact) {
-                configCopy.phone = configCopy.contact.phone;
-                configCopy.address = configCopy.contact.address;
-            }
-
             const res = await githubApi('write', 'src/data/siteConfig.json', { content: JSON.stringify(configCopy, null, 2), sha: fileSha, message: 'CMS: Update siteConfig.json' });
-            setFileSha(res.sha); setPendingLogo(null); setPendingFavicon(null); setPendingAuthorImage(null);
+            setFileSha(res.sha); setPendingLogo(null);
             triggerToast('Configurações salvas com sucesso!', 'success', 100);
         } catch (err: any) {
             setError(err.message); triggerToast(`Erro: ${err.message}`, 'error');
@@ -95,11 +65,12 @@ export default function ConfigEditor() {
     const labelClass = "block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1";
 
     const presetThemes = [
-        { name: 'Plumco Original (Rosa)', primary: '#FE4F70', accent: '#211D4F', dark: '#203656' },
-        { name: 'Oceano (Padrão Azul)', primary: '#0052da', accent: '#0041ac', dark: '#0D2137' },
-        { name: 'Floresta', primary: '#4CAF50', accent: '#1B3A2A', dark: '#1B3A2A' },
-        { name: 'Sunset', primary: '#FF5722', accent: '#4A1A0A', dark: '#4A1A0A' },
-        { name: 'Roxo Elegante', primary: '#7C3AED', accent: '#2D1060', dark: '#2D1060' },
+        { name: 'Rosa Original', primary: '#FE4F70', accent: '#FFA387', dark: '#203656' },
+        { name: 'Oceano',        primary: '#2196F3', accent: '#64B5F6', dark: '#0D2137' },
+        { name: 'Floresta',      primary: '#4CAF50', accent: '#81C784', dark: '#1B3A2A' },
+        { name: 'Sunset',        primary: '#FF5722', accent: '#FFAB91', dark: '#4A1A0A' },
+        { name: 'Roxo Elegante', primary: '#7C3AED', accent: '#A78BFA', dark: '#2D1060' },
+        { name: 'Dourado',       primary: '#D4A017', accent: '#F0D060', dark: '#3D2A00' },
     ];
 
     return (
@@ -123,90 +94,29 @@ export default function ConfigEditor() {
                 <h3 className="text-xl font-bold text-slate-900 mb-8 border-b border-slate-100 pb-4">Identidade Base</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="md:col-span-2 flex flex-col sm:flex-row gap-8 items-start">
-                        <div className="w-full sm:w-1/3 space-y-6">
-                            <div>
-                                <label className={labelClass}>Logo Principal</label>
-                                <label className="group relative border-2 border-dashed border-slate-300 hover:border-violet-500 bg-slate-50 hover:bg-violet-50/50 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all text-center h-48">
-                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) { setPendingLogo(file); setConfig({ ...config, logo: URL.createObjectURL(file) }); }
-                                    }} />
-                                    {config?.logo ? (
-                                        <img src={config.logo} alt="Logo" className="max-h-24 w-auto object-contain mb-4 group-hover:scale-105 transition-transform" />
-                                    ) : (
-                                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-slate-300 shadow-sm mb-3 group-hover:text-violet-500 transition-colors">
-                                            <ImageIcon className="w-8 h-8" />
-                                        </div>
-                                    )}
-                                    <span className="text-sm font-semibold text-slate-700 group-hover:text-violet-700 transition-colors">
-                                        {config?.logo ? 'Trocar Logo' : 'Enviar Logo'}
-                                    </span>
-                                </label>
-                                <div className="mt-4 space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                    <label className="flex items-center gap-3 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={config?.showLogo !== false}
-                                            onChange={e => setConfig({ ...config, showLogo: e.target.checked })}
-                                            className="w-5 h-5 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
-                                        />
-                                        <span className="text-sm font-bold text-slate-700 uppercase tracking-tight">Exibir Logo</span>
-                                    </label>
-                                    <div className="pt-2">
-                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 leading-none">Altura Máxima: {config?.logoHeight || 60}px</label>
-                                        <input
-                                            type="range"
-                                            min="30"
-                                            max="120"
-                                            value={config?.logoHeight || 60}
-                                            onChange={e => setConfig({ ...config, logoHeight: parseInt(e.target.value) })}
-                                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-violet-600"
-                                        />
+                        <div className="w-full sm:w-1/3">
+                            <label className={labelClass}>Logo Principal</label>
+                            <label className="group relative border-2 border-dashed border-slate-300 hover:border-violet-500 bg-slate-50 hover:bg-violet-50/50 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all text-center h-48">
+                                <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) { setPendingLogo(file); setConfig({ ...config, logo: URL.createObjectURL(file) }); }
+                                }} />
+                                {config?.logo ? (
+                                    <img src={config.logo} alt="Logo" className="max-h-24 w-auto object-contain mb-4 group-hover:scale-105 transition-transform" />
+                                ) : (
+                                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-slate-300 shadow-sm mb-3 group-hover:text-violet-500 transition-colors">
+                                        <ImageIcon className="w-8 h-8" />
                                     </div>
-                                </div>
-                            </div>
-                            <div>
-                                <label className={labelClass}>Favicon (Ícone do Navegador)</label>
-                                <label className="group relative border-2 border-dashed border-slate-300 hover:border-violet-500 bg-slate-50 hover:bg-violet-50/50 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer transition-all text-center h-32">
-                                    <input type="file" accept="image/x-icon,image/png" className="hidden" onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) { setPendingFavicon(file); setConfig({ ...config, favicon: URL.createObjectURL(file) }); }
-                                    }} />
-                                    {config?.favicon ? (
-                                        <img src={config.favicon} alt="Favicon" className="w-10 h-10 object-contain mb-2 group-hover:scale-105 transition-transform" />
-                                    ) : (
-                                        <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-slate-300 shadow-sm mb-2 group-hover:text-violet-500 transition-colors">
-                                            <ImageIcon className="w-5 h-5" />
-                                        </div>
-                                    )}
-                                    <span className="text-xs font-semibold text-slate-700 group-hover:text-violet-700 transition-colors">
-                                        {config?.favicon ? 'Trocar Favicon' : 'Enviar Favicon'}
-                                    </span>
-                                </label>
-                            </div>
+                                )}
+                                <span className="text-sm font-semibold text-slate-700 group-hover:text-violet-700 transition-colors">
+                                    {config?.logo ? 'Trocar Logo' : 'Enviar Logo (PNG/SVG)'}
+                                </span>
+                            </label>
                         </div>
                         <div className="w-full sm:w-2/3 space-y-6">
                             <div>
                                 <label className={labelClass}>Nome do Site / Empresa</label>
                                 <input type="text" value={config?.name || ''} onChange={e => setConfig({ ...config, name: e.target.value })} className={inputClass} />
-                            </div>
-                            <div>
-                                <label className={labelClass}>Descrição Geral (SEO)</label>
-                                <textarea rows={2} value={config?.description || ''} onChange={e => setConfig({ ...config, description: e.target.value })} className={`${inputClass} resize-none`} placeholder="Uma breve descrição da sua empresa..." />
-                            </div>
-                            <div>
-                                <label className={labelClass}>Autor Principal (Sidebar Genérica do Blog)</label>
-                                <select
-                                    className={inputClass}
-                                    value={config?.defaultAuthorId || ''}
-                                    onChange={e => setConfig({ ...config, defaultAuthorId: e.target.value })}
-                                >
-                                    <option value="">-- Selecione o Autor --</option>
-                                    {authors.map(author => (
-                                        <option key={author.id} value={author.id}>{author.name}</option>
-                                    ))}
-                                </select>
-                                <p className="text-[11px] text-slate-500 mt-2 leading-tight">Os dados (nome, bio, foto) virão do cadastro geral de autores.<br />Se entrar na leitura de um post, o autor cadastrado naquele post terá prioridade absoluta na sidebar.</p>
                             </div>
                             {/* Preset Themes */}
                             <div>
@@ -273,12 +183,16 @@ export default function ConfigEditor() {
             <div className="p-8 bg-white border border-slate-200 rounded-2xl shadow-sm">
                 <h3 className="text-xl font-bold text-slate-900 mb-8 border-b border-slate-100 pb-4">Informações de Contato</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* URL Removida a pedido do usuário */}
+                    {/* URL do site — nível raiz do siteConfig */}
+                    <div>
+                        <label className={labelClass}>URL do Site</label>
+                        <input type="text" placeholder="https://seusite.com.br" value={config?.url || ''} onChange={e => setConfig({ ...config, url: e.target.value })} className={inputClass} />
+                    </div>
                     {/* email, phone, address — dentro de contact{} */}
                     {[
-                        { key: 'email', label: 'E-mail', placeholder: 'contato@seusite.com' },
-                        { key: 'phone', label: 'Telefone / WhatsApp', placeholder: '(11) 99999-9999' },
-                        { key: 'address', label: 'Endereço', placeholder: 'Rua X, 123 — Cidade/UF' },
+                        { key: 'email',   label: 'E-mail',              placeholder: 'contato@seusite.com' },
+                        { key: 'phone',   label: 'Telefone / WhatsApp', placeholder: '(11) 99999-9999' },
+                        { key: 'address', label: 'Endereço',            placeholder: 'Rua X, 123 — Cidade/UF' },
                     ].map(f => (
                         <div key={f.key}>
                             <label className={labelClass}>{f.label}</label>
@@ -313,6 +227,30 @@ export default function ConfigEditor() {
                 <div className="space-y-4">
                     <div><label className={labelClass}>Título Padrão (SEO)</label><input type="text" value={config?.seo?.title || ''} onChange={e => setConfig({ ...config, seo: { ...config.seo, title: e.target.value } })} className={inputClass} /></div>
                     <div><label className={labelClass}>Descrição Padrão</label><textarea rows={3} value={config?.seo?.description || ''} onChange={e => setConfig({ ...config, seo: { ...config.seo, description: e.target.value } })} className={`${inputClass} resize-y`} /></div>
+                </div>
+            </div>
+
+            {/* Sitemap */}
+            <div className="p-8 bg-white border border-slate-200 rounded-2xl shadow-sm">
+                <h3 className="text-xl font-bold text-slate-900 mb-8 border-b border-slate-100 pb-4">Sitemap</h3>
+                <div className="space-y-4">
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                        <p className="text-sm font-bold text-emerald-700 mb-1">Sitemap XML gerado automaticamente</p>
+                        <p className="text-xs text-emerald-600 mb-3">O sitemap é atualizado a cada build/deploy com todas as páginas e posts do site.</p>
+                        {config?.url ? (
+                            <div className="space-y-2">
+                                <a href={`${config.url.replace(/\/$/, '')}/sitemap-index.xml`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-bold text-emerald-700 bg-white px-4 py-2 rounded-lg border border-emerald-200 hover:bg-emerald-100 transition-colors">
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                    {config.url.replace(/\/$/, '')}/sitemap-index.xml
+                                </a>
+                                <p className="text-xs text-slate-500">Use esta URL no Google Search Console para enviar seu sitemap.</p>
+                            </div>
+                        ) : (
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                <p className="text-xs text-amber-700 font-medium">Configure a URL do Site acima para ver o link do sitemap.</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </form>
