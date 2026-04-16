@@ -7,7 +7,6 @@ type MenuItem = {
     label: string;
     href: string;
     showCategories?: boolean;
-    showServices?: boolean;
 };
 
 export default function MenuEditor() {
@@ -17,19 +16,11 @@ export default function MenuEditor() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
 
-    const [headerExtras, setHeaderExtras] = useState({
-        schedule: '',
-        phone: '',
-        btnText: '',
-        btnHref: ''
-    });
-
     useEffect(() => {
         githubApi('read', 'src/data/menu.json')
             .then(data => {
-                const parsed = JSON.parse(data.content);
+                const parsed = JSON.parse(data?.content || "{}");
                 setItems(Array.isArray(parsed.items) ? parsed.items : []);
-                if (parsed.headerExtras) setHeaderExtras(parsed.headerExtras);
                 setFileSha(data.sha);
             })
             .catch(err => {
@@ -43,14 +34,14 @@ export default function MenuEditor() {
         setSaving(true);
         try {
             await githubApi('write', 'src/data/menu.json', {
-                content: JSON.stringify({ items, headerExtras }, null, 4),
+                content: JSON.stringify({ items }, null, 4),
                 sha: fileSha,
             });
             const fresh = await githubApi('read', 'src/data/menu.json');
             setFileSha(fresh.sha);
-            triggerToast('Menu e contatos atualizados!', 'success');
+            triggerToast('success', 'Menu atualizado!');
         } catch (err: any) {
-            triggerToast(err.message, 'error');
+            triggerToast('error', err.message);
         } finally {
             setSaving(false);
         }
@@ -132,71 +123,9 @@ export default function MenuEditor() {
                 <p className="font-semibold mb-1">Dicas</p>
                 <ul className="space-y-0.5 text-violet-600 text-xs">
                     <li>• Itens com <strong>Mostrar categorias</strong> exibem uma lista suspensa com todas as categorias do blog</li>
-                    <li>• Itens com <strong>Mostrar serviços</strong> exibem uma lista suspensa com todos os serviços cadastrados no CMS</li>
                     <li>• Para páginas do seu próprio site, escreva só o caminho (ex: <strong>/sobre</strong>). Para sites externos, cole o link completo</li>
                     <li>• A ordem que aparece aqui é a ordem exibida no menu do site</li>
                 </ul>
-            </div>
-
-            {/* Extras do Header */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 overflow-hidden">
-                <div className="flex items-center gap-3 mb-6 border-b border-slate-50 pb-4">
-                    <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
-                        <Navigation className="w-4 h-4 text-amber-600" />
-                    </div>
-                    <h3 className="font-bold text-slate-800 text-sm">Informações do Topo (Topbar)</h3>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="col-span-2">
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">
-                            Horário de Funcionamento
-                        </label>
-                        <input
-                            type="text"
-                            value={headerExtras.schedule}
-                            onChange={e => setHeaderExtras({ ...headerExtras, schedule: e.target.value })}
-                            placeholder="Ex: Seg - Sex || 08:00 - 18:00"
-                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">
-                            Telefone de Contato
-                        </label>
-                        <input
-                            type="text"
-                            value={headerExtras.phone}
-                            onChange={e => setHeaderExtras({ ...headerExtras, phone: e.target.value })}
-                            placeholder="Ex: (11) 99999-9999"
-                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">
-                            Texto do Botão (CTA)
-                        </label>
-                        <input
-                            type="text"
-                            value={headerExtras.btnText}
-                            onChange={e => setHeaderExtras({ ...headerExtras, btnText: e.target.value })}
-                            placeholder="Ex: ORÇAMENTO GRÁTIS"
-                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all"
-                        />
-                    </div>
-                    <div className="col-span-2">
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">
-                            Link do Botão (CTA)
-                        </label>
-                        <input
-                            type="text"
-                            value={headerExtras.btnHref}
-                            onChange={e => setHeaderExtras({ ...headerExtras, btnHref: e.target.value })}
-                            placeholder="Ex: /contato"
-                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all"
-                        />
-                    </div>
-                </div>
             </div>
 
             {/* Lista de itens */}
@@ -268,37 +197,22 @@ export default function MenuEditor() {
                             </button>
                         </div>
 
-                        {/* Toggle showCategories and showServices */}
-                        <div className="mt-3 ml-10 flex flex-wrap gap-6">
-                            <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => updateItem(i, 'showCategories', !item.showCategories)}
-                                    className={`relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none ${item.showCategories ? 'bg-violet-600' : 'bg-slate-200'
-                                        }`}
-                                >
-                                    <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${item.showCategories ? 'translate-x-4' : 'translate-x-0'
-                                        }`} />
-                                </button>
-                                <span className="text-xs text-slate-500">
-                                    Mostrar categorias do blog
-                                </span>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => updateItem(i, 'showServices', !item.showServices)}
-                                    className={`relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none ${item.showServices ? 'bg-violet-600' : 'bg-slate-200'
-                                        }`}
-                                >
-                                    <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${item.showServices ? 'translate-x-4' : 'translate-x-0'
-                                        }`} />
-                                </button>
-                                <span className="text-xs text-slate-500">
-                                    Mostrar todos os serviços
-                                </span>
-                            </div>
+                        {/* Toggle showCategories */}
+                        <div className="mt-3 ml-10 flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => updateItem(i, 'showCategories', !item.showCategories)}
+                                className={`relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none ${
+                                    item.showCategories ? 'bg-violet-600' : 'bg-slate-200'
+                                }`}
+                            >
+                                <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${
+                                    item.showCategories ? 'translate-x-4' : 'translate-x-0'
+                                }`} />
+                            </button>
+                            <span className="text-xs text-slate-500">
+                                Mostrar dropdown de categorias
+                            </span>
                         </div>
                     </div>
                 ))}

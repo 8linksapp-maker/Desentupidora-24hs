@@ -1,300 +1,129 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Loader2, LayoutTemplate, Phone, Mail, MapPin, Type, List, Globe, Image as ImageIcon } from 'lucide-react';
+import { Loader2, LayoutTemplate } from 'lucide-react';
 import { triggerToast } from './CmsToaster';
 import { githubApi } from '../../lib/adminApi';
-import ImageUpload from './ImageUpload';
-
-type ContatoConfig = {
-    hero: {
-        title: string;
-        subtitle: string;
-        bgImage: string;
-    };
-    info: {
-        title: string;
-        description: string;
-        address: string;
-        email: string;
-        phone: string;
-        mapUrl: string;
-        formServices: string[];
-    };
-};
-
-const DEFAULT_CONFIG: ContatoConfig = {
-    hero: { title: '', subtitle: '', bgImage: '' },
-    info: {
-        title: '',
-        description: '',
-        address: '',
-        email: '',
-        phone: '',
-        mapUrl: '',
-        formServices: []
-    }
-};
 
 export default function ContatoEditor() {
-    const [config, setConfig] = useState<ContatoConfig>(DEFAULT_CONFIG);
-    const [fileSha, setFileSha] = useState('');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
+    const [contato, setContato] = useState<any>(null);
+    const [fileSha, setFileSha] = useState('');
+    const [pendingUploads, setPendingUploads] = useState<Record<string, File>>({});
 
     useEffect(() => {
-        async function load() {
-            try {
-                const data = await githubApi('read', 'src/data/contato.json');
-                if (data) {
-                    setConfig(JSON.parse(data.content));
-                    setFileSha(data.sha);
-                }
-            } catch (err: any) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        }
-        load();
+        githubApi('read', 'src/data/contato.json')
+            .then(data => { setContato(JSON.parse(data?.content || "{}")); setFileSha(data.sha); })
+            .catch(err => setError(err.message))
+            .finally(() => setLoading(false));
     }, []);
 
-    const updateNested = (path: string, value: any) => {
-        const newConfig = { ...config };
-        const keys = path.split('.');
-        let current: any = newConfig;
-        for (let i = 0; i < keys.length - 1; i++) {
-            current = current[keys[i]];
-        }
-        current[keys[keys.length - 1]] = value;
-        setConfig(newConfig);
-    };
+    const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(',')[1]);
+        reader.onerror = error => reject(error);
+        reader.readAsDataURL(file);
+    });
 
-    const handleServiceChange = (index: number, value: string) => {
-        const newServices = [...config.info.formServices];
-        newServices[index] = value;
-        updateNested('info.formServices', newServices);
-    };
-
-    const addService = () => {
-        updateNested('info.formServices', [...config.info.formServices, 'Novo Serviço']);
-    };
-
-    const removeService = (index: number) => {
-        const newServices = config.info.formServices.filter((_, i) => i !== index);
-        updateNested('info.formServices', newServices);
-    };
-
-    async function save() {
-        setSaving(true);
+    const handleSave = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        setSaving(true); setError('');
+        triggerToast('Sincronizando Página de Contato...', 'progress', 20);
         try {
-            await githubApi('write', 'src/data/contato.json', {
-                content: JSON.stringify(config, null, 4),
-                sha: fileSha,
-            });
-            const fresh = await githubApi('read', 'src/data/contato.json');
-            setFileSha(fresh.sha);
-            triggerToast('Página de Contato atualizada!', 'success');
+            let finalJson = { ...contato };
+            for (const [keyPath, fileObj] of Object.entries(pendingUploads)) {
+                const base64Content = await fileToBase64(fileObj);
+                const fileExt = fileObj.name.split('.').pop() || 'jpg';
+                const ghPath = `public/uploads/${Date.now()}-${keyPath}.${fileExt}`;
+                await githubApi('write', ghPath, { content: base64Content, isBase64: true, message: `Upload imagem ${ghPath}` });
+                if (keyPath === 'seoImg') { if (!finalJson.seo) finalJson.seo = {}; finalJson.seo.image = ghPath.replace('public', ''); }
+            }
+            const res = await githubApi('write', 'src/data/contato.json', { content: JSON.stringify(finalJson, null, 2), sha: fileSha, message: 'CMS: Customização da Página Contato' });
+            setFileSha(res.sha); setContato(finalJson); setPendingUploads({});
+            triggerToast('Página de Contato atualizada!', 'success', 100);
         } catch (err: any) {
-            triggerToast(err.message, 'error');
-        } finally {
-            setSaving(false);
-        }
-    }
+            setError(err.message); triggerToast(`Erro: ${err.message}`, 'error');
+        } finally { setSaving(false); }
+    };
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, uiKey: string) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setPendingUploads(prev => ({ ...prev, [uiKey]: file }));
+        if (uiKey === 'seoImg') setContato({ ...contato, seo: { ...contato?.seo, image: URL.createObjectURL(file) } });
+        e.target.value = '';
+    };
+
+    const updateField = (section: string, key: string, value: string) => {
+        setContato({ ...contato, [section]: { ...(contato[section] || {}), [key]: value } });
+    };
 
     if (loading) return (
-        <div className="flex flex-col items-center justify-center p-32 text-slate-400 bg-white rounded-2xl border border-slate-200 shadow-sm">
+        <div className="flex flex-col items-center justify-center p-32 text-slate-400 bg-white rounded-2xl border border-slate-200">
             <LayoutTemplate className="w-10 h-10 animate-pulse mb-6 text-slate-300" />
-            <p className="font-bold text-sm animate-pulse text-slate-500 uppercase tracking-widest">Carregando Configurações...</p>
+            <p className="font-semibold text-sm animate-pulse text-slate-500">Buscando contato.json...</p>
         </div>
     );
 
+    const cardClass = "p-8 mb-6 bg-white border border-slate-200 rounded-2xl shadow-sm";
+    const inputClass = "w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-800 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all shadow-sm";
+    const labelClass = "block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1";
+
     return (
-        <div className="max-w-5xl space-y-6 pb-20">
-            {/* Header Sticky */}
-            <div className="sticky top-0 z-20 flex items-center justify-between bg-white/80 backdrop-blur-md p-4 rounded-2xl border border-slate-200 shadow-sm mb-8">
-                <div className="flex items-center gap-3">
-                    <div className="bg-violet-100 p-2 rounded-xl">
-                        <Phone className="w-5 h-5 text-violet-600" />
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-bold text-slate-800 tracking-tight">Página de Contato</h2>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Gestão de Canais de Atendimento</p>
-                    </div>
+        <div className="max-w-4xl pb-32">
+            <div className="flex items-center justify-between bg-white p-4 px-6 rounded-2xl border border-slate-200 shadow-sm mb-6">
+                <div>
+                    <h2 className="text-lg font-bold text-slate-800">Editar Página: Contato</h2>
+                    <p className="text-xs text-slate-500 mt-0.5">Edita o arquivo <code className="bg-slate-100 px-1 rounded">src/data/contato.json</code></p>
                 </div>
-                <button
-                    onClick={save}
-                    disabled={saving}
-                    className="group bg-slate-900 hover:bg-black disabled:opacity-50 text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-lg active:scale-95"
-                >
-                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 group-hover:scale-110 transition-transform" />}
-                    {saving ? 'Salvando...' : 'Publicar Alterações'}
+                <button onClick={handleSave} disabled={saving} className="bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white px-5 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all">
+                    {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {saving ? 'Salvando...' : 'Salvar'}
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* Main Content */}
-                <div className="lg:col-span-8 space-y-6">
-                    {/* Hero & Text Section */}
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-                        <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2 border-b pb-3 mb-4 uppercase tracking-wider">
-                            <Type className="w-4 h-4 text-violet-500" /> Cabeçalho & Chamada
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 tracking-widest">Título do Hero</label>
-                                <input
-                                    type="text"
-                                    value={config.hero.title}
-                                    onChange={e => updateNested('hero.title', e.target.value)}
-                                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 transition-all text-sm font-medium"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 tracking-widest">Subtítulo Hero</label>
-                                <input
-                                    type="text"
-                                    value={config.hero.subtitle}
-                                    onChange={e => updateNested('hero.subtitle', e.target.value)}
-                                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 transition-all text-sm font-medium"
-                                />
-                            </div>
-                        </div>
-                        <div className="pt-4 border-t">
-                            <ImageUpload
-                                label="Imagem de Fundo do Cabeçalho"
-                                value={config.hero.bgImage}
-                                onChange={val => updateNested('hero.bgImage', val)}
-                            />
-                        </div>
-                        <div className="space-y-4 pt-4 border-t">
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 tracking-widest">Título da Seção de Dúvidas</label>
-                                <input
-                                    type="text"
-                                    value={config.info.title}
-                                    onChange={e => updateNested('info.title', e.target.value)}
-                                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 transition-all text-sm font-bold"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 tracking-widest">Descrição da Seção</label>
-                                <textarea
-                                    value={config.info.description}
-                                    onChange={e => updateNested('info.description', e.target.value)}
-                                    rows={3}
-                                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 transition-all text-sm"
-                                />
-                            </div>
-                        </div>
-                    </div>
+            {error && <div className="p-3 bg-red-50 text-red-700 border-l-4 border-red-500 text-sm font-medium mb-4">{error}</div>}
 
-                    {/* Services List */}
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-                        <div className="flex items-center justify-between border-b pb-3 mb-4">
-                            <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2 uppercase tracking-wider">
-                                <List className="w-4 h-4 text-emerald-500" /> Serviços no Formulário
-                            </h4>
-                            <button onClick={addService} className="text-[10px] bg-emerald-50 text-emerald-600 hover:bg-emerald-100 font-bold px-3 py-1 rounded-full transition-colors uppercase tracking-wider">
-                                + Adicionar
-                            </button>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {config.info.formServices.map((service, idx) => (
-                                <div key={idx} className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100 group">
-                                    <input
-                                        type="text"
-                                        value={service}
-                                        onChange={e => handleServiceChange(idx, e.target.value)}
-                                        className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-medium py-1 px-2"
-                                    />
-                                    <button
-                                        onClick={() => removeService(idx)}
-                                        className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 p-1.5 transition-all"
-                                    >
-                                        <Loader2 className="w-3.5 h-3.5 rotate-45" />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
+            <form onSubmit={handleSave} className="space-y-6">
+                <div className={cardClass}>
+                    <h3 className="text-lg font-bold text-slate-900 mb-6 border-b border-slate-100 pb-4">1. Chamada de Topo (Hero)</h3>
+                    <div className="space-y-4">
+                        <div><label className={labelClass}>Título Principal (H1)</label><input type="text" value={contato?.hero?.title || ''} onChange={e => updateField('hero', 'title', e.target.value)} className={inputClass} /></div>
+                        <div><label className={labelClass}>Subtítulo</label><textarea rows={3} value={contato?.hero?.subtitle || ''} onChange={e => updateField('hero', 'subtitle', e.target.value)} className={`${inputClass} resize-y`} /></div>
                     </div>
                 </div>
 
-                {/* Sidebar */}
-                <div className="lg:col-span-4 space-y-6">
-                    {/* Contact Info */}
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-                        <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2 border-b pb-3 mb-4 uppercase tracking-wider">
-                            <Info className="w-4 h-4 text-blue-500" /> Informações Diretas
-                        </h4>
-                        <div className="space-y-4">
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 tracking-widest flex items-center gap-1.5">
-                                    <MapPin className="w-3 h-3 text-slate-400" /> Endereço Exibido
-                                </label>
-                                <textarea
-                                    value={config.info.address}
-                                    onChange={e => updateNested('info.address', e.target.value)}
-                                    rows={2}
-                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/10 transition-all text-xs font-medium"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 tracking-widest flex items-center gap-1.5">
-                                    <Mail className="w-3 h-3 text-slate-400" /> E-mail Público
-                                </label>
-                                <input
-                                    type="email"
-                                    value={config.info.email}
-                                    onChange={e => updateNested('info.email', e.target.value)}
-                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/10 transition-all text-xs font-medium"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 tracking-widest flex items-center gap-1.5">
-                                    <Phone className="w-3 h-3 text-slate-400" /> Telefone Público
-                                </label>
-                                <input
-                                    type="text"
-                                    value={config.info.phone}
-                                    onChange={e => updateNested('info.phone', e.target.value)}
-                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/10 transition-all text-xs font-medium"
-                                />
-                            </div>
-                        </div>
+                <div className={cardClass}>
+                    <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-200">
+                        <h3 className="text-lg font-bold text-slate-900">2. Textos do Bloco de Informações</h3>
+                        <span className="text-[10px] bg-slate-100 text-slate-800 font-bold px-2 py-1 rounded">Contatos reais editados em Configurações</span>
                     </div>
-
-                    {/* Google Map */}
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                        <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2 border-b pb-3 uppercase tracking-wider">
-                            <Globe className="w-4 h-4 text-orange-500" /> Google Maps (Embed)
-                        </h4>
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 tracking-widest">URL do Iframe (src)</label>
-                            <textarea
-                                value={config.info.mapUrl}
-                                onChange={e => updateNested('info.mapUrl', e.target.value)}
-                                rows={4}
-                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/10 transition-all text-[10px] font-mono leading-tight"
-                                placeholder="https://www.google.com/maps/embed?..."
-                            />
-                        </div>
-                        {config.info.mapUrl && (
-                            <div className="aspect-video w-full rounded-xl overflow-hidden border border-slate-200 shadow-inner">
-                                <iframe src={config.info.mapUrl} className="w-full h-full grayscale opacity-70" />
-                            </div>
-                        )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="md:col-span-2"><label className={labelClass}>Título do Box de Informações</label><input type="text" value={contato?.cards?.napTitle || ''} onChange={e => updateField('cards', 'napTitle', e.target.value)} className={inputClass} /></div>
+                        {[
+                            { key: 'addressLabel', label: 'Aviso de Endereço' },
+                            { key: 'phoneLabel', label: 'Aviso de Telefone' },
+                            { key: 'emailLabel', label: 'Aviso de E-mail' },
+                            { key: 'formSubmitText', label: 'Texto do Botão de Envio' },
+                        ].map(f => (
+                            <div key={f.key}><label className={labelClass}>{f.label}</label><input type="text" value={contato?.cards?.[f.key] || ''} onChange={e => updateField('cards', f.key, e.target.value)} className={inputClass} /></div>
+                        ))}
                     </div>
                 </div>
-            </div>
+
+                <div className={cardClass}>
+                    <h3 className="text-lg font-bold text-slate-900 mb-6 border-b border-slate-100 pb-4">SEO</h3>
+                    <div className="space-y-4">
+                        <div><label className={labelClass}>Título SEO</label><input type="text" value={contato?.seo?.title || ''} onChange={e => updateField('seo', 'title', e.target.value)} className={inputClass} placeholder="Contato | Nome do Site" /></div>
+                        <div><label className={labelClass}>Meta Descrição</label><textarea rows={3} value={contato?.seo?.description || ''} onChange={e => updateField('seo', 'description', e.target.value)} className={`${inputClass} resize-y text-xs`} /></div>
+                        <div>
+                            <label className={labelClass}>Imagem Social (Open Graph)</label>
+                            <input type="file" accept="image/*" onChange={e => handleFileSelect(e, 'seoImg')} className="text-[10px] w-full file:mr-2 file:py-1 file:px-2 file:border-0 file:bg-violet-50 file:text-violet-700" />
+                            {contato?.seo?.image && <img src={contato?.seo?.image} className="w-full aspect-video object-cover mt-3 rounded" />}
+                        </div>
+                    </div>
+                </div>
+            </form>
         </div>
     );
 }
-
-const Info = ({ className, ...props }: any) => (
-    <svg
-        {...props}
-        className={className}
-        viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-    >
-        <circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" />
-    </svg>
-)
