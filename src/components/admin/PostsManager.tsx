@@ -35,20 +35,18 @@ export default function PostsManager() {
                 githubApi('list', 'src/content/blog'),
             ]);
 
-            if (authRes.status === 'fulfilled') {
-                const parsed = JSON.parse(authRes.value.content);
-                if (Array.isArray(parsed)) setAuthors(parsed);
+            if (authRes.status === 'fulfilled' && authRes.value?.content) {
+                try {
+                    const parsed = JSON.parse(authRes.value.content);
+                    if (Array.isArray(parsed)) setAuthors(parsed);
+                } catch {}
             }
 
-            if (catRes.status === 'fulfilled') {
+            if (catRes.status === 'fulfilled' && catRes.value?.content) {
                 try {
-                    const parsedCats = JSON.parse((catRes.value as any).content);
-                    if (Array.isArray(parsedCats)) {
-                        parsedCats.forEach((c: string) => allCategories.add(c));
-                        // Já seta as categorias do arquivo imediatamente
-                        setDynamicCategories(Array.from(allCategories));
-                    }
-                } catch (e) { console.error("Erro ao parsear categorias", e); }
+                    const parsedCats = JSON.parse(catRes.value.content);
+                    if (Array.isArray(parsedCats)) parsedCats.forEach((c: string) => allCategories.add(c));
+                } catch {}
             }
 
             if (postsRes.status === 'fulfilled') {
@@ -67,12 +65,12 @@ export default function PostsManager() {
                         const fm = match[1];
                         const extract = (key: string) => { const m = fm.match(new RegExp(`${key}:\\s*(?:"([^"]*)"|'([^']*)'|([^\\n\\r]+))`)); return m ? (m[1] || m[2] || m[3] || '').trim() : ''; };
                         title = extract('title') || f.name; category = extract('category') || 'Geral'; author = extract('author'); pubDate = extract('pubDate'); draft = extract('draft') === 'true'; description = extract('description'); heroImage = extract('heroImage');
+                        if (category) allCategories.add(category);
                     }
                     enriched.push({ ...f, sha: fileData.sha || f.sha, title, category, author, pubDate, draft, description, heroImage, slug, rawBody: match ? match[2] : text });
                 }));
 
                 setPosts(enriched);
-                // Atualiza novamente com categorias extraídas dos posts
                 if (allCategories.size > 0) setDynamicCategories(Array.from(allCategories));
             }
         } catch (err: any) {
@@ -259,25 +257,13 @@ export default function PostsManager() {
                                                         </div>
                                                         <div>
                                                             <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Categoria</label>
-                                                            <select
-                                                                value={quickEditData.category}
-                                                                onChange={e => setQuickEditData({ ...quickEditData, category: e.target.value })}
-                                                                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-violet-500"
-                                                            >
-                                                                <option value="">Sem categoria</option>
-                                                                {dynamicCategories.map(c => <option key={c} value={c}>{c}</option>)}
-                                                            </select>
+                                                            <input type="text" list="cats-list" value={quickEditData.category} onChange={e => setQuickEditData({ ...quickEditData, category: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-violet-500" />
+                                                            <datalist id="cats-list">{dynamicCategories.map(c => <option key={c} value={c} />)}</datalist>
                                                         </div>
                                                         <div>
                                                             <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Autor</label>
-                                                            <select
-                                                                value={quickEditData.author}
-                                                                onChange={e => setQuickEditData({ ...quickEditData, author: e.target.value })}
-                                                                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-violet-500"
-                                                            >
-                                                                <option value="">Sem autor</option>
-                                                                {authors.map(a => <option key={a.id} value={a.name}>{a.name}</option>)}
-                                                            </select>
+                                                            <input type="text" list="authors-list" value={quickEditData.author} onChange={e => setQuickEditData({ ...quickEditData, author: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-violet-500" />
+                                                            <datalist id="authors-list">{authors.map(a => <option key={a.id} value={a.name} />)}</datalist>
                                                         </div>
                                                         <div className="flex items-end gap-3">
                                                             <label className="flex items-center gap-2 text-sm font-bold text-slate-600 cursor-pointer">
