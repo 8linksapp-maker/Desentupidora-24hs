@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import PlumcoLayout from '../../layouts/PlumcoLayout.astro';
 import PlumcoSidebar from '../../components/layout/PlumcoSidebar.astro';
 import { readData } from '../../lib/readData';
+import PostAfterPlugins from '../../plugins/_slots/PostAfterPlugins.astro';
 
 const sobreData = readData('sobre.json');
 
@@ -59,6 +60,7 @@ const { Content } = await post.render();
                             <div class="entry-details">
                                 <Content />
                             </div>
+                            <PostAfterPlugins currentSlug={post.slug} category={post.data.category || ''} />
                         </div>
 
                         <div class="tag-share clearfix">
