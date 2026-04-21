@@ -10,6 +10,7 @@ export default function ConfigEditor() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [pendingLogo, setPendingLogo] = useState<File | null>(null);
+    const [pendingFavicon, setPendingFavicon] = useState<File | null>(null);
 
     const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -39,8 +40,16 @@ export default function ConfigEditor() {
                 await githubApi('write', ghPath, { content: base64Content, isBase64: true, message: 'CMS: Upload Logo' });
                 configCopy.logo = ghPath.replace('public', '');
             }
+            if (pendingFavicon) {
+                triggerToast('Enviando favicon...', 'progress', 50);
+                const base64Content = await fileToBase64(pendingFavicon);
+                const fileExt = pendingFavicon.name.split('.').pop() || 'png';
+                const ghPath = `public/favicon.${fileExt}`;
+                await githubApi('write', ghPath, { content: base64Content, isBase64: true, message: 'CMS: Upload Favicon' });
+                configCopy.favicon = `/favicon.${fileExt}`;
+            }
             const res = await githubApi('write', 'src/data/siteConfig.json', { content: JSON.stringify(configCopy, null, 2), sha: fileSha, message: 'CMS: Update siteConfig.json' });
-            setFileSha(res.sha); setPendingLogo(null);
+            setFileSha(res.sha); setPendingLogo(null); setPendingFavicon(null);
             triggerToast('Configurações salvas com sucesso!', 'success', 100);
         } catch (err: any) {
             setError(err.message); triggerToast(`Erro: ${err.message}`, 'error');
@@ -110,6 +119,25 @@ export default function ConfigEditor() {
                                 )}
                                 <span className="text-sm font-semibold text-slate-700 group-hover:text-violet-700 transition-colors">
                                     {config?.logo ? 'Trocar Logo' : 'Enviar Logo (PNG/SVG)'}
+                                </span>
+                            </label>
+                        </div>
+                        <div>
+                            <label className={labelClass}>Favicon</label>
+                            <label className="group relative border-2 border-dashed border-slate-300 hover:border-violet-500 bg-slate-50 hover:bg-violet-50/50 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer transition-all text-center h-32">
+                                <input type="file" accept="image/png,image/svg+xml,image/x-icon" className="hidden" onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) { setPendingFavicon(file); setConfig({ ...config, favicon: URL.createObjectURL(file) }); }
+                                }} />
+                                {config?.favicon ? (
+                                    <img src={config.favicon} alt="Favicon" className="max-h-12 w-auto object-contain mb-2 group-hover:scale-105 transition-transform" />
+                                ) : (
+                                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-slate-300 shadow-sm mb-2 group-hover:text-violet-500 transition-colors">
+                                        <ImageIcon className="w-5 h-5" />
+                                    </div>
+                                )}
+                                <span className="text-xs font-semibold text-slate-700 group-hover:text-violet-700 transition-colors">
+                                    {config?.favicon ? 'Trocar' : 'Enviar Favicon'}
                                 </span>
                             </label>
                         </div>
