@@ -10,62 +10,42 @@ const buttonAccept = cc?.buttonAccept || 'Aceitar';
 const buttonReject = cc?.buttonReject || 'Ler Política';
 const rejectUrl = cc?.rejectUrl || '/privacidade';
 const position = cc?.position || 'bottom';
+
+const posClass = position === 'top'
+  ? 'fixed top-4 left-4 right-4 md:left-auto md:right-6 md:max-w-sm'
+  : 'fixed bottom-6 left-4 right-4 md:left-auto md:right-6 md:max-w-sm';
+const slideClass = position === 'top' ? '-translate-y-20' : 'translate-y-20';
 ---
 
 {enabled && (
   <div
     id="cookie-banner"
-    style={`position: fixed; ${position === 'top' ? 'top: 20px;' : 'bottom: 20px;'} left: 20px; right: 20px; z-index: 9999999; display: flex; justify-content: flex-end; pointer-events: none; opacity: 0; transform: ${position === 'top' ? 'translateY(-20px)' : 'translateY(20px)'}; transition: all 0.5s ease;`}
-    data-position={position}
+    class={`${posClass} z-[100] transform ${slideClass} opacity-0 transition-all duration-500 pointer-events-none`}
+    style={`position:fixed;${position === 'top' ? 'top:1rem;' : 'bottom:1.5rem;'}right:1.5rem;left:auto;max-width:400px;z-index:100;opacity:0;pointer-events:none;transition:all .5s;`}
+    data-accept-text={buttonAccept}
   >
-    <div style="background: #ffffff; color: #253041; padding: 25px; border-radius: 15px; box-shadow: 0 10px 50px rgba(0,0,0,0.2); border: 1px solid #e2e8f0; width: 100%; max-width: 400px; pointer-events: auto; display: block !important;">
-      <div style="display: flex; align-items: flex-start; gap: 15px; margin-bottom: 20px;">
-        <div style="width: 45px; height: 45px; border-radius: 12px; background: var(--primary-color, #0052da); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="white"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path
-              d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"
-            ></path>
-            <path d="M8.5 8.5v.01"></path>
-            <path d="M16 15.5v.01"></path>
-            <path d="M12 12v.01"></path>
-            <path d="M11 17v.01"></path>
-            <path d="M7 14v.01"></path>
+    <div style="background:#fff;color:#1e293b;padding:1.25rem;border-radius:1rem;box-shadow:0 25px 50px -12px rgba(0,0,0,.25);border:1px solid #e5e7eb;">
+      <div style="display:flex;align-items:flex-start;gap:0.75rem;margin-bottom:1rem;">
+        <div style={`width:40px;height:40px;min-width:40px;border-radius:0.75rem;display:flex;align-items:center;justify-content:center;background:var(--walker-primary,#FE4F70);`}>
+          <svg xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;color:#fff;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
         </div>
-        <div style="flex: 1;">
-          <h3
-            style="margin: 0 0 4px 0; font-size: 16px; font-weight: 700; color: #1e293b; font-family: sans-serif;"
-          >
-            Privacidade de Cookies
-          </h3>
-          <p
-            style="margin: 0; font-size: 13px; line-height: 1.5; color: #64748b; font-family: sans-serif;"
-          >
-            Utilizamos cookies para melhorar sua experiência. Ao continuar, você
-            concorda com nossa política.
-          </p>
+        <div>
+          <h4 style="font-weight:700;font-size:0.875rem;margin:0 0 4px 0;color:#1e293b;">{headline}</h4>
+          <p style="color:#64748b;font-size:0.75rem;line-height:1.5;margin:0;">{description}</p>
         </div>
       </div>
-      <div style="display: flex; gap: 8px; margin-top: 16px;">
+      <div style="display:flex;gap:0.75rem;">
         <button
           id="accept-cookies"
-          style="flex: 1; padding: 12px; background: var(--primary-color, #0052da); color: #ffffff; border: none; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; transition: background 0.2s; font-family: sans-serif;"
+          style={`flex:1;padding:0.625rem 1rem;border-radius:0.75rem;color:#fff;font-weight:700;font-size:0.875rem;border:none;cursor:pointer;background:var(--walker-primary,#FE4F70);`}
         >
-          Aceitar Tudo
+          {buttonAccept}
         </button>
         <a
           href={rejectUrl}
-          style="flex: 1; padding: 12px; background: #f1f5f9; color: #475569; border: none; border-radius: 10px; font-weight: 700; font-size: 14px; text-decoration: none; text-align: center; transition: background 0.2s; font-family: sans-serif;"
+          style="flex:1;padding:0.625rem 1rem;border-radius:0.75rem;background:#f1f5f9;color:#334155;font-weight:700;font-size:0.875rem;text-align:center;text-decoration:none;"
         >
           {buttonReject}
         </a>
@@ -74,33 +54,26 @@ const position = cc?.position || 'bottom';
   </div>
 )}
 
-<script is:inline>
+<script>
 (function() {
   var banner = document.getElementById('cookie-banner');
   var acceptBtn = document.getElementById('accept-cookies');
 
-  if (!banner || !acceptBtn) {
-    console.log('Cookie banner elements not found');
-    return;
-  }
+  if (!banner || !acceptBtn) return;
+
+  var slideClass = banner.classList.contains('-translate-y-20') ? '-translate-y-20' : 'translate-y-20';
 
   // Show if not yet accepted
   if (!localStorage.getItem('cookies-accepted')) {
-    console.log('Showing cookie banner...');
     setTimeout(function() {
-      banner.style.opacity = '1';
-      banner.style.transform = 'translateY(0)';
-      banner.style.pointerEvents = 'auto';
-    }, 2000);
+      banner.classList.remove(slideClass, 'opacity-0', 'pointer-events-none');
+    }, 1500);
   }
 
   acceptBtn.addEventListener('click', function() {
-    console.log('Cookies accepted');
     localStorage.setItem('cookies-accepted', 'true');
-    banner.style.opacity = '0';
-    var isTop = banner.getAttribute('data-position') === 'top';
-    banner.style.transform = isTop ? 'translateY(-20px)' : 'translateY(20px)';
-    banner.style.pointerEvents = 'none';
+    banner.classList.add(slideClass, 'opacity-0', 'pointer-events-none');
+    // Emit event for GA/Pixel deferred loading
     window.dispatchEvent(new CustomEvent('cookies-accepted'));
   });
 })();
