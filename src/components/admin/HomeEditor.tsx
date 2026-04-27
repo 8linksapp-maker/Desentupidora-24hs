@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Home, Image, List, Activity, Users, Calendar, MessageSquare, Newspaper, Save, Loader2, AlertCircle, Plus, Trash2, ChevronRight, Video, TrendingUp } from 'lucide-react';
+import { Home, Image, List, Activity, Users, Calendar, MessageSquare, Newspaper, Save, Loader2, AlertCircle, Plus, Trash2, ChevronRight, Video, TrendingUp, ToggleLeft } from 'lucide-react';
 import { triggerToast } from './CmsToaster';
 import { githubApi } from '../../lib/adminApi';
 import ImageUpload from './ImageUpload';
@@ -68,7 +68,7 @@ const DEFAULT_CONFIG: HomeConfig = {
     latestBlog: { title: '', subtitle: '', description: '' }
 };
 
-type Tab = 'hero' | 'features' | 'services_facts' | 'other';
+type Tab = 'hero' | 'features' | 'services_facts' | 'other' | 'sections';
 
 export default function HomeEditor() {
     const [config, setConfig] = useState<HomeConfig>(DEFAULT_CONFIG);
@@ -164,7 +164,7 @@ export default function HomeEditor() {
 
             {/* Tabs Navigation */}
             <div className="flex gap-1 bg-slate-200/50 p-1 rounded-2xl w-fit">
-                {(['hero', 'features', 'services_facts', 'other'] as const).map(t => (
+                {(['hero', 'features', 'services_facts', 'other', 'sections'] as const).map(t => (
                     <button
                         key={t}
                         onClick={() => setTab(t)}
@@ -177,7 +177,8 @@ export default function HomeEditor() {
                         {t === 'features' && <List className="w-4 h-4" />}
                         {t === 'services_facts' && <Activity className="w-4 h-4" />}
                         {t === 'other' && <Users className="w-4 h-4" />}
-                        {t === 'hero' ? 'Banner Hero' : t === 'features' ? 'Características' : t === 'services_facts' ? 'Serviços & Números' : 'Agendamento & Outros'}
+                        {t === 'sections' && <ToggleLeft className="w-4 h-4" />}
+                        {t === 'hero' ? 'Banner Hero' : t === 'features' ? 'Caracteristicas' : t === 'services_facts' ? 'Servicos & Numeros' : t === 'sections' ? 'Secoes' : 'Agendamento & Outros'}
                     </button>
                 ))}
             </div>
@@ -797,6 +798,39 @@ export default function HomeEditor() {
                                     className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none"
                                 />
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Tab: Secoes */}
+            {tab === 'sections' && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2 border-b pb-3 mb-4">
+                            <ToggleLeft className="w-4 h-4 text-violet-500" /> Secoes da Home
+                        </h3>
+                        <p className="text-xs text-slate-500 mb-4">Escolha quais secoes ficam visiveis na homepage.</p>
+                        <div className="space-y-3">
+                            {[
+                                { key: 'showFeatures', label: 'Caracteristicas / Diferenciais' },
+                                { key: 'showServices', label: 'Servicos' },
+                                { key: 'showFunFacts', label: 'Numeros / Estatisticas' },
+                                { key: 'showTeam', label: 'Especialistas (Equipe)' },
+                                { key: 'showBooking', label: 'Agendamento & Video' },
+                                { key: 'showTestimonials', label: 'Depoimentos' },
+                                { key: 'showBlog', label: 'Blog / Artigos Recentes' },
+                            ].map(s => (
+                                <label key={s.key} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors">
+                                    <input
+                                        type="checkbox"
+                                        checked={(config as any).sections?.[s.key] !== false}
+                                        onChange={e => setConfig(prev => ({ ...prev, sections: { ...(prev as any).sections, [s.key]: e.target.checked } } as any))}
+                                        className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <span className="text-sm font-medium text-slate-700">{s.label}</span>
+                                </label>
+                            ))}
                         </div>
                     </div>
                 </div>

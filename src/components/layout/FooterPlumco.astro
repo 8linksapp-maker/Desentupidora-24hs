@@ -18,7 +18,7 @@ const currentYear = new Date().getFullYear();
                                 <span class="logo-text" style="font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -1px;">{siteConfig.name}</span>
                             )}
                         </div>
-                        <p>{siteConfig.description}</p>
+                        <p>{siteConfig.footer?.description || siteConfig.description}</p>
                         <ul>
                             {siteConfig.social?.facebook && (
                                 <li><a href={siteConfig.social.facebook}><i class="ti-facebook"></i></a></li>
@@ -78,7 +78,7 @@ const currentYear = new Date().getFullYear();
         <div class="container">
             <div class="row">
                 <div class="col col-xs-12">
-                    <p class="copyright"> Copyright &copy; {currentYear} {siteConfig.name}. Todos os direitos reservados.
+                    <p class="copyright"> Copyright &copy; {currentYear} {siteConfig.footer?.copyright || siteConfig.name}. Todos os direitos reservados.
                         <span class="mx-2">|</span>
                         <a href="/privacidade" style="color: inherit; text-decoration: underline;">Privacidade</a>
                         <span class="mx-2">|</span>
