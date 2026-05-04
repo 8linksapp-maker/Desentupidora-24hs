@@ -23,6 +23,8 @@ const selectedFont = fontMap[siteConfig.theme?.font || 'poppins'] || fontMap.pop
 const primaryColor = siteConfig.theme?.primary || '#3B82F6';
 const accentColor = siteConfig.theme?.accent || '#6366F1';
 const darkColor = siteConfig.theme?.dark || '#1E293B';
+const textColor = siteConfig.theme?.text || '';
+const headingColor = siteConfig.theme?.heading || '';
 
 const menuItems: any[] = readData('menu.json', { items: [] }).items || [];
 const categoriesData = readData('categories.json', []);
@@ -111,6 +113,9 @@ const socialImage = image?.startsWith('http') ? image : image ? new URL(image, s
     }
     body { font-family: var(--font-body); color: var(--color-dark); }
     h1,h2,h3,h4,h5,h6 { font-family: var(--font-heading); }
+    ${textColor ? `body, p, .post-content, .post-content p, .post-content li { color: ${textColor} !important; }` : ''}
+    ${headingColor ? `h1, h2, h3, h4, h5, h6, .post-content h1, .post-content h2, .post-content h3, .post-content h4 { color: ${headingColor} !important; }` : ''}
+    ${siteConfig.hidePostDate ? '.post-date { display: none !important; }' : ''}
     .btn-primary { background-color: var(--color-primary); color: #fff; padding: 0.5rem 1.25rem; border-radius: 0.375rem; font-weight: 600; display: inline-block; }
     .btn-primary:hover { opacity: 0.9; }
     .category-badge { background-color: var(--color-primary); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -178,6 +183,9 @@ const socialImage = image?.startsWith('http') ? image : image ? new URL(image, s
         )}
         {siteConfig.social?.youtube && (
           <a href={siteConfig.social.youtube} target="_blank" rel="noopener" class="text-gray-500 hover:text-[--color-primary] transition-colors text-sm">YT</a>
+        )}
+        {siteConfig.social?.pinterest && (
+          <a href={siteConfig.social.pinterest} target="_blank" rel="noopener" class="text-gray-500 hover:text-[--color-primary] transition-colors text-sm">PI</a>
         )}
       </div>
 

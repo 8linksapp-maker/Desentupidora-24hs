@@ -1,4 +1,5 @@
 ---
+import { BLOG_BASE } from '../../../lib/postUrl';
 import { getCollection } from 'astro:content';
 
 const { title, subtitle, description } = Astro.props;
@@ -27,11 +28,11 @@ const posts = (await getCollection('blog')).sort(
                                 <img src={post.data.heroImage || "/assets/images/blog/img-1.jpg"} alt={post.data.title}>
                             </div>
                             <div class="wpo-blog-content">
-                                <a class="date" href={`/blog/${post.slug}`}>{post.data.pubDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</a>
-                                <h2><a href={`/blog/${post.slug}`}>{post.data.title}</a></h2>
+                                <a class="date" href={`${BLOG_BASE}/${post.slug}`}>{post.data.pubDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</a>
+                                <h2><a href={`${BLOG_BASE}/${post.slug}`}>{post.data.title}</a></h2>
                                 <ul>
                                     <li>{post.data.author || "Equipe"}</li>
-                                    <li><a href={`/blog/${post.slug}`}>Comentários</a></li>
+                                    <li><a href={`${BLOG_BASE}/${post.slug}`}>Comentários</a></li>
                                     <li>Compartilhar</li>
                                 </ul>
                             </div>

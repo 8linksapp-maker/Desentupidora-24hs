@@ -66,6 +66,8 @@ const hexToRgb = (hex: string) => {
         primaryColor: siteConfig.theme?.primary || '#0052da',
         accentColor: siteConfig.theme?.accent || '#FFA387',
         darkColor: siteConfig.theme?.dark || '#0041ac',
+        textColor: siteConfig.theme?.text || '',
+        headingColor: siteConfig.theme?.heading || '',
         primaryRgb: hexToRgb(siteConfig.theme?.primary || '#0052da'),
         accentRgb: hexToRgb(siteConfig.theme?.accent || '#FFA387'),
         logoHeight: `${siteConfig.logoHeight || 60}px`,
@@ -80,11 +82,18 @@ const hexToRgb = (hex: string) => {
         }
 
         /* RESTRIÇÃO DE TAMANHO DO LOGO */
-        .navbar-brand img, .wpo-upper-footer .logo img { 
-            max-height: var(--logo-height) !important; 
-            width: auto !important; 
+        .navbar-brand img, .wpo-upper-footer .logo img {
+            max-height: var(--logo-height) !important;
+            width: auto !important;
             object-fit: contain !important;
         }
+
+        /* Cores customizadas de texto e títulos (aplicadas só se setadas) */
+        body.has-custom-text, body.has-custom-text p, body.has-custom-text .wpo-section-content, body.has-custom-text li:not(.post-date) { color: var(--textColor) !important; }
+        body.has-custom-heading h1, body.has-custom-heading h2, body.has-custom-heading h3, body.has-custom-heading h4, body.has-custom-heading h5, body.has-custom-heading h6 { color: var(--headingColor) !important; }
+
+        /* Ocultar data de publicação quando hidePostDate=true (classe no body) */
+        body.hide-post-dates .post-date { display: none !important; }
 
         /* CONFIGURAÇÕES GLOBAIS INTELIGENTES (RGB + DESIGN ORIGINAL) */
         
@@ -196,7 +205,7 @@ const hexToRgb = (hex: string) => {
     <HeadPlugins />
 </head>
 
-<body>
+<body class={`${siteConfig.hidePostDate ? 'hide-post-dates' : ''} ${siteConfig.theme?.text ? 'has-custom-text' : ''} ${siteConfig.theme?.heading ? 'has-custom-heading' : ''}`.trim()}>
 
     <div class="page-wrapper">
         <!-- start preloader -->

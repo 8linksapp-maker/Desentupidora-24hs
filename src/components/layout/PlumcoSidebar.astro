@@ -1,4 +1,5 @@
 ---
+import { BLOG_BASE } from '../../lib/postUrl';
 import { getCollection } from 'astro:content';
 import { readData } from '../../lib/readData';
 
@@ -106,7 +107,7 @@ const categories = posts.reduce((acc: any, post) => {
                         <img src={post.data.heroImage || "/assets/images/recent-posts/img-1.jpg"} alt={post.data.title}>
                     </div>
                     <div class="details">
-                        <h4><a href={`/blog/${post.slug}`}>{post.data.title}</a></h4>
+                        <h4><a href={`${BLOG_BASE}/${post.slug}`}>{post.data.title}</a></h4>
                         <span class="date">{post.data.pubDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })} </span>
                     </div>
                 </div>

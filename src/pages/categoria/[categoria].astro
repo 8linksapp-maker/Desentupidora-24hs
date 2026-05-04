@@ -1,4 +1,5 @@
 ---
+import { BLOG_BASE } from '../../lib/postUrl';
 import PlumcoLayout from '../../layouts/PlumcoLayout.astro';
 import PlumcoSidebar from '../../components/layout/PlumcoSidebar.astro';
 import { readData } from '../../lib/readData';
@@ -71,9 +72,9 @@ const heroBg = sobreData.hero?.bgImage || "/assets/images/page-title.jpg";
                                     </ul>
                                 </div>
                                 <div class="entry-details">
-                                    <h3><a href={`/blog/${post.slug}`}>{post.data.title}</a></h3>
+                                    <h3><a href={`${BLOG_BASE}/${post.slug}`}>{post.data.title}</a></h3>
                                     <p>{post.data.description}</p>
-                                    <a href={`/blog/${post.slug}`} class="read-more">LEIA MAIS...</a>
+                                    <a href={`${BLOG_BASE}/${post.slug}`} class="read-more">LEIA MAIS...</a>
                                 </div>
                             </div>
                         ))}
