@@ -85,7 +85,7 @@ export default function DeployManager() {
         clearSnooze();
         setSnoozedUntil(0);
         try {
-            const r = await fetch('/api/admin/deploy', { method: 'POST', credentials: 'include' });
+            const r = await fetch('/api/admin/deploy', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' } });
             const data = await r.json();
             if (!r.ok) {
                 setUi('error');
