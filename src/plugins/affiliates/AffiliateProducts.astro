@@ -14,7 +14,9 @@ import { readData } from '../../lib/readData';
 const pluginsConfig = readData('pluginsConfig.json', {}) as any;
 const config = pluginsConfig?.affiliates;
 
-const enabled = config?.enabled === true;
+// Default true se config.affiliates ausente — evita que produtos cadastrados deixem de
+// renderizar só porque o aluno nunca abriu a aba "Configurações" pra salvar.
+const enabled = config?.enabled !== false;
 const products = enabled ? readData('affiliateProducts.json', []) as any[] : [];
 const activeProducts = products.filter((p: any) => p.enabled !== false);
 ---

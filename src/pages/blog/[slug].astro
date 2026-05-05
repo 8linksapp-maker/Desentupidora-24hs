@@ -4,6 +4,7 @@ import PlumcoLayout from '../../layouts/PlumcoLayout.astro';
 import PlumcoSidebar from '../../components/layout/PlumcoSidebar.astro';
 import { readData } from '../../lib/readData';
 import PostAfterPlugins from '../../plugins/_slots/PostAfterPlugins.astro';
+import AffiliateProducts from '../../plugins/affiliates/AffiliateProducts.astro';
 
 const sobreData = readData('sobre.json');
 
@@ -59,9 +60,10 @@ const { Content } = await post.render();
                                 </ul>
                             </div>
                             <h2>{post.data.title}</h2>
-                            <div class="entry-details">
+                            <div class="entry-details post-content">
                                 <Content />
                             </div>
+                            <AffiliateProducts />
                             <PostAfterPlugins currentSlug={post.slug} category={post.data.category || ''} />
                         </div>
 
