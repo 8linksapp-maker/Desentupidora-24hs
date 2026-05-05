@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Navigation, Plus, Trash2, ChevronUp, ChevronDown, Save, Loader2, AlertCircle, LayoutList, ExternalLink } from 'lucide-react';
+import { Navigation, Plus, Trash2, ChevronUp, ChevronDown, Save, Loader2, AlertCircle, LayoutList, ExternalLink, MousePointerClick } from 'lucide-react';
 import { triggerToast } from './CmsToaster';
 import { githubApi } from '../../lib/adminApi';
 
@@ -15,19 +15,28 @@ export default function MenuEditor() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [siteConfig, setSiteConfig] = useState<any>(null);
+    const [siteConfigSha, setSiteConfigSha] = useState('');
+    const [menuHoverEnabled, setMenuHoverEnabled] = useState(true);
 
     useEffect(() => {
-        githubApi('read', 'src/data/menu.json')
-            .then(data => {
-                const parsed = JSON.parse(data?.content || "{}");
+        Promise.all([
+            githubApi('read', 'src/data/menu.json').catch(err => err.message.includes('404') ? null : Promise.reject(err)),
+            githubApi('read', 'src/data/siteConfig.json').catch(() => null),
+        ]).then(([menuData, cfgData]) => {
+            if (menuData) {
+                const parsed = JSON.parse(menuData.content || "{}");
                 setItems(Array.isArray(parsed.items) ? parsed.items : []);
-                setFileSha(data.sha);
-            })
-            .catch(err => {
-                if (err.message.includes('404')) setItems([]);
-                else setError(err.message);
-            })
-            .finally(() => setLoading(false));
+                setFileSha(menuData.sha);
+            }
+            if (cfgData) {
+                const cfg = JSON.parse(cfgData.content);
+                setSiteConfig(cfg);
+                setSiteConfigSha(cfgData.sha);
+                setMenuHoverEnabled(cfg.menuHoverEnabled !== false);
+            }
+        }).catch(err => setError(err.message))
+          .finally(() => setLoading(false));
     }, []);
 
     async function save() {
@@ -39,6 +48,19 @@ export default function MenuEditor() {
             });
             const fresh = await githubApi('read', 'src/data/menu.json');
             setFileSha(fresh.sha);
+
+            // Salva menuHoverEnabled em siteConfig.json se mudou
+            if (siteConfig && siteConfig.menuHoverEnabled !== menuHoverEnabled) {
+                const newCfg = { ...siteConfig, menuHoverEnabled };
+                await githubApi('write', 'src/data/siteConfig.json', {
+                    content: JSON.stringify(newCfg, null, 4),
+                    sha: siteConfigSha,
+                });
+                const freshCfg = await githubApi('read', 'src/data/siteConfig.json');
+                setSiteConfig(JSON.parse(freshCfg.content));
+                setSiteConfigSha(freshCfg.sha);
+            }
+
             triggerToast('success', 'Menu atualizado!');
         } catch (err: any) {
             triggerToast('error', err.message);
@@ -116,6 +138,36 @@ export default function MenuEditor() {
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     {saving ? 'Salvando...' : 'Salvar'}
                 </button>
+            </div>
+
+            {/* Comportamento do submenu */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center shrink-0">
+                    <MousePointerClick className="w-5 h-5 text-violet-600" />
+                </div>
+                <div className="flex-1">
+                    <div className="flex items-center justify-between gap-3">
+                        <div>
+                            <p className="font-semibold text-slate-800 text-sm">Abrir submenu ao passar o mouse</p>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                                {menuHoverEnabled
+                                    ? 'O dropdown de categorias abre automaticamente quando o visitante passa o mouse.'
+                                    : 'O dropdown só abre quando o visitante clica no item do menu.'}
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setMenuHoverEnabled(v => !v)}
+                            className={`relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none shrink-0 ${
+                                menuHoverEnabled ? 'bg-violet-600' : 'bg-slate-200'
+                            }`}
+                        >
+                            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                                menuHoverEnabled ? 'translate-x-5' : 'translate-x-0'
+                            }`} />
+                        </button>
+                    </div>
+                </div>
             </div>
 
             {/* Info */}
