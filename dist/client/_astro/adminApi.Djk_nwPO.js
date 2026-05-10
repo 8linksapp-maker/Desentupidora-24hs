@@ -1,0 +1,1 @@
+async function i(o,a,n){const t=await fetch("/api/admin/github",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:o,path:a,...n})});if(!t.ok){const r=await t.json().catch(()=>({}));throw new Error(r.error||`Erro ${t.status} na API`)}return t.json()}export{i as g};

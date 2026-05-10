@@ -1,0 +1,208 @@
+{
+	"version": 3,
+	"routes": [
+		{
+			"handle": "filesystem"
+		},
+		{
+			"src": "^/_astro/(.*)$",
+			"headers": {
+				"cache-control": "public, max-age=31536000, immutable"
+			},
+			"continue": true
+		},
+		{
+			"src": "^/_server-islands/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/_image/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/adsense/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/affiliates/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/ai/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/authors/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/categories/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/config/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/contato/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/cookie-consent/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/email-list/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/google-tag/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/home/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/import-wp/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/legal/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/login/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/menu/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/meta-pixel/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/plugins/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/posts/edit/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/posts/new/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/posts/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/redirects/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/search-console/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/seo/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/servicos/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/sobre/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/social-share/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/admin/deploy/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/admin/deploy-status/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/admin/github/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/admin/login/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/admin/logout/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/admin/plugins/ai/generate/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/admin/plugins/ai/test-key/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/admin/plugins/email-list/leads/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/admin/plugins/email-list/send-email/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/admin/plugins/email-list/sequence-status/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/admin/plugins/email-list/test-brevo/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/admin/plugins/import/wordpress/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/admin/plugins/redirects/test/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/admin/plugins/redirects/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/admin/plugins/search-console/data/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/admin/plugins/search-console/test-connection/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/cron/process-sequences/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/subscribe/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/.*$",
+			"dest": "/404.html",
+			"status": 404
+		}
+	]
+}
