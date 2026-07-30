@@ -52,8 +52,8 @@ const {
 const formattedTitle = title === siteConfig.name ? title : `${title} | ${siteConfig.name}`;
 const siteUrl = siteConfig.url || Astro.url.origin;
 const socialImage = image?.startsWith('http') ? image : image ? new URL(image, siteUrl).toString() : '';
+import CustomCodeBodyStart from '../plugins/custom-code/CustomCodeBodyStart.astro';
 ---
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -136,6 +136,7 @@ const socialImage = image?.startsWith('http') ? image : image ? new URL(image, s
 </head>
 
 <body class={`bg-gray-50 min-h-screen flex flex-col ${bodyClass}`}>
+<CustomCodeBodyStart />
 
   <!-- Header -->
   <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
